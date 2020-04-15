@@ -10245,6 +10245,9 @@ function canMergeByMergeable(pr) {
     return pr.mergeable;
 }
 exports.canMergeByMergeable = canMergeByMergeable;
+// Note, mergeable_state is an undocumented field
+// (per https://github.community/t5/GitHub-API-Development-and/PullRequest-mergeable-state-possible-values/td-p/21943)
+// with some possible values noted in https://github.com/octokit/octokit.net/issues/1763
 function canMergeByMergeableState(pr) {
     return pr.mergeable_state === 'clean' || pr.mergeable_state === 'unstable';
 }
@@ -10548,7 +10551,18 @@ function statusHandler(client, context, config) {
         console.log(event);
         const branchNames = event.branches.map((branch) => branch.name);
         console.log('Commit belongs to branches: ', branchNames);
-        const prs = yield Promise.all(branchNames.map((branch) => client.pulls.list(Object.assign(Object.assign({}, context.repo), { head: branch, state: 'open' }))));
+        // Bug fix
+        //
+        // `head` is a `:` separated pair, first entry should be the organisation,
+        // followed by the branch name, not just the branch name.
+        //
+        // Note: 'dfinity-lab' is the value of event.organization.login and
+        // event.repository.owner.login
+        //
+        // https://developer.github.com/v3/pulls/#list-pull-requests describes
+        // the format as 'user:ref-name' or 'organization:ref-name', so
+        // event.organization.login is probably the better value
+        const prs = yield Promise.all(branchNames.map((branch) => client.pulls.list(Object.assign(Object.assign({}, context.repo), { head: `dfinity-lab:${branch}`, state: 'open' }))));
         console.log('PRs before flattening');
         console.log(prs);
         const flatPRs = prs.flatMap((item) => {

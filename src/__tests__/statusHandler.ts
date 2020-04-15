@@ -72,19 +72,19 @@ describe('status handler', () => {
             owner,
             repo,
             state: 'open',
-            head: 'first',
+            head: 'dfinity-lab:first',
         })
         expect(client.pulls.list).toHaveBeenNthCalledWith(2, {
             owner,
             repo,
             state: 'open',
-            head: 'second',
+            head: 'dfinity-lab:second',
         })
         expect(client.pulls.list).toHaveBeenNthCalledWith(3, {
             owner,
             repo,
             state: 'open',
-            head: 'third',
+            head: 'dfinity-lab:third',
         })
     })
 })
