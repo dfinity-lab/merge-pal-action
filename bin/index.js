@@ -2018,6 +2018,9 @@ function main(core, github) {
         console.log('context', JSON.stringify(github.context));
         const event = github.context.eventName;
         console.log('eventName', event);
+        console.log('rate limit info');
+        let rateLimit = yield client.rateLimit.get();
+        console.log(rateLimit.data.resources.core);
         switch (event) {
             case 'pull_request':
                 yield prHandler_1.default(client, github.context, config);

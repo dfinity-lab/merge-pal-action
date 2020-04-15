@@ -13,6 +13,9 @@ export default async function main(core: CoreModule, github: GitHubModule) {
     console.log('context', JSON.stringify(github.context))
     const event = github.context.eventName
     console.log('eventName', event)
+    console.log('rate limit info')
+    let rateLimit = await client.rateLimit.get()
+    console.log(rateLimit.data.resources.core)
 
     switch (event) {
         case 'pull_request':

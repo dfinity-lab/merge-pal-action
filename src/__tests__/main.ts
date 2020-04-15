@@ -12,6 +12,28 @@ jest.mock('../readConfig', () => mockReadConfig)
 
 import main from '../main'
 import { CoreModule, GitHubModule } from '../types'
+import { GitHub } from '@actions/github'
+
+const fakeRateLimit = {
+    limit: 1000,
+    remaining: 990,
+    reset: 123
+}
+
+const fakeClient = {
+    rateLimit: {
+        get: jest.fn(() => { 
+            return {
+                data: {
+                    resources: {
+                        core: fakeRateLimit
+                        }
+                    }
+                }
+            })
+    }
+}
+
 
 describe('main behavior', () => {
     afterEach(() => {
@@ -28,7 +50,7 @@ describe('main behavior', () => {
             }
             const github = {
                 context: {},
-                GitHub: jest.fn(),
+                GitHub: jest.fn(token => fakeClient)
             }
             await main(
                 (core as unknown) as CoreModule,
@@ -44,12 +66,11 @@ describe('main behavior', () => {
             const core = {
                 getInput: mockInput,
             }
-            const fakeClient = {}
             const github = {
                 context: {
                     eventName: 'pull_request',
                 },
-                GitHub: jest.fn().mockReturnValue(fakeClient),
+                GitHub: jest.fn(token => fakeClient)
             }
             await main(
                 (core as unknown) as CoreModule,
@@ -73,12 +94,11 @@ describe('main behavior', () => {
             const core = {
                 getInput: mockInput,
             }
-            const fakeClient = {}
             const github = {
                 context: {
                     eventName: 'status',
                 },
-                GitHub: jest.fn().mockReturnValue(fakeClient),
+                GitHub: jest.fn(token => fakeClient)
             }
             await main(
                 (core as unknown) as CoreModule,
@@ -102,12 +122,12 @@ describe('main behavior', () => {
             const core = {
                 getInput: mockInput,
             }
-            const fakeClient = {}
+
             const github = {
                 context: {
                     eventName: 'pull_request_review',
                 },
-                GitHub: jest.fn().mockReturnValue(fakeClient),
+                GitHub: jest.fn(token => fakeClient)
             }
             await main(
                 (core as unknown) as CoreModule,
@@ -131,12 +151,11 @@ describe('main behavior', () => {
             const core = {
                 getInput: mockInput,
             }
-            const fakeClient = {}
             const github = {
                 context: {
                     eventName: 'push',
                 },
-                GitHub: jest.fn().mockReturnValue(fakeClient),
+                GitHub: jest.fn(token => fakeClient)
             }
             await main(
                 (core as unknown) as CoreModule,
