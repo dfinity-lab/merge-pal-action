@@ -2017,6 +2017,7 @@ function main(core, github) {
         console.log('config', JSON.stringify(config));
         console.log('context', JSON.stringify(github.context));
         const event = github.context.eventName;
+        console.log('eventName', event);
         switch (event) {
             case 'pull_request':
                 yield prHandler_1.default(client, github.context, config);
@@ -4490,15 +4491,24 @@ const isEnabledForPR_1 = __importDefault(__webpack_require__(520));
 function pushHandler(client, context, config) {
     return __awaiter(this, void 0, void 0, function* () {
         const payload = context.payload;
+        console.log('pushHandler: payload: ', payload);
         const components = payload.ref.split('/');
+        console.log('pushHandler: components: ', components);
         const branchName = components[components.length - 1];
+        console.log('pushHandler: branchName: ', branchName);
+        console.log('pushHandler: Listing open PRs');
         const openedPrs = yield client.pulls.list(Object.assign(Object.assign({}, context.repo), { state: 'open', base: branchName }));
         console.log('opened prs', openedPrs);
         yield Promise.all(openedPrs.data.map((pr) => {
+            console.log('pushHandler: Processing PR: ', pr);
             if (!isEnabledForPR_1.default(pr, config.whitelist, config.blacklist)) {
+                console.log('pushHandler: not enabled for this PR, returning');
                 return;
             }
-            return client.pulls.updateBranch(Object.assign(Object.assign({}, context.repo), { pull_number: pr.number, expected_head_sha: pr.head.sha }));
+            console.log('pushHandler: enabled for this PR, starting updateBranch');
+            let ret = client.pulls.updateBranch(Object.assign(Object.assign({}, context.repo), { pull_number: pr.number, expected_head_sha: pr.head.sha }));
+            console.log('pushHandler: updateBranch completed');
+            return ret;
         }));
     });
 }
@@ -9738,17 +9748,26 @@ function addHook (state, kind, name, hook) {
 Object.defineProperty(exports, "__esModule", { value: true });
 function isEnabledForPR(pr, whitelist, blacklist) {
     if (whitelist.length === 0 && blacklist.length === 0) {
+        console.log('isEnabledForPR: whitelist and blacklist are both empty, returning true');
         return true;
     }
+    console.log('isEnabledForPR: whitelist: ', whitelist);
+    console.log('isEnabledForPR: blacklist: ', blacklist);
     const labels = pr.labels.map((label) => label.name);
+    console.log('isEnabledForPR: PR labels: ', labels);
     const matchedBlack = labels.filter((label) => blacklist.includes(label));
     const matchedWhite = labels.filter((label) => whitelist.includes(label));
+    console.log('isEnabledForPR: matchedBlack: ', matchedBlack);
+    console.log('isEnabledForPR: matchedWhite: ', matchedWhite);
     if (blacklist.length > 0 && matchedBlack.length > 0) {
+        console.log('isEnabledForPR: Matched entry on blacklist, returning false');
         return false;
     }
     if (whitelist.length > 0 && matchedWhite.length === 0) {
+        console.log('isEnabledForPR: Did not match entry on whitelist, returning false');
         return false;
     }
+    console.log('isEnabledForPR: mergepal is enabled for this PR, returning true');
     return true;
 }
 exports.default = isEnabledForPR;
@@ -10522,12 +10541,18 @@ const mergeIfReady_1 = __importDefault(__webpack_require__(743));
 function statusHandler(client, context, config) {
     return __awaiter(this, void 0, void 0, function* () {
         const event = context.payload;
+        console.log('Status Payload:');
+        console.log(event);
         const branchNames = event.branches.map((branch) => branch.name);
         console.log('Commit belongs to branches: ', branchNames);
         const prs = yield Promise.all(branchNames.map((branch) => client.pulls.list(Object.assign(Object.assign({}, context.repo), { head: branch, state: 'open' }))));
+        console.log('PRs before flattening');
+        console.log(prs);
         const flatPRs = prs.flatMap((item) => {
             return item.data.map((pr) => pr);
         });
+        console.log('PRs after flattening');
+        console.log(flatPRs);
         yield Promise.all(flatPRs.map((pr) => mergeIfReady_1.default(client, context.repo.owner, context.repo.repo, pr.number, event.sha, config)));
     });
 }
@@ -10654,7 +10679,9 @@ const mergeIfReady_1 = __importDefault(__webpack_require__(743));
 function reviewHandler(client, context, config) {
     return __awaiter(this, void 0, void 0, function* () {
         const event = context.payload;
+        console.log('reviewHandler: starting mergeIfReady');
         yield mergeIfReady_1.default(client, context.repo.owner, context.repo.repo, event.pull_request.number, event.pull_request.head.sha, config);
+        console.log('reviewHandler: mergeIfReady completed');
     });
 }
 exports.default = reviewHandler;
@@ -11820,17 +11847,20 @@ const canMerge_1 = __importDefault(__webpack_require__(592));
 const isEnabledForPR_1 = __importDefault(__webpack_require__(520));
 function mergeIfReady(client, owner, repo, number, sha, config) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log('mergeIfReady: start');
         const pr = yield client.pulls.get({
             owner,
             repo,
             pull_number: number,
         });
         if (!isEnabledForPR_1.default(pr.data, config.whitelist, config.blacklist)) {
+            console.log('mergeIfReady: Not enabled for this PR, aborting');
             return;
         }
-        console.log('raw pr', pr);
+        console.log('raw pr.data', pr.data);
         console.log('pr and mergeable', pr.data.number, pr.data.mergeable, pr.data.mergeable_state);
         if (canMerge_1.default(pr.data, config.whitelist, config.blacklist)) {
+            console.log('mergeIfReady: PR can be merged, starting merge');
             yield client.pulls.merge({
                 owner,
                 repo,
@@ -11838,6 +11868,7 @@ function mergeIfReady(client, owner, repo, number, sha, config) {
                 sha,
                 merge_method: config.method,
             });
+            console.log('mergeIfReady: merge completed');
         }
     });
 }

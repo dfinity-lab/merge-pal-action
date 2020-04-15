@@ -10,15 +10,18 @@ export default async function mergeIfReady(
     sha: string,
     config: Config,
 ) {
+    console.log('mergeIfReady: start')
+
     const pr = await client.pulls.get({
         owner,
         repo,
         pull_number: number,
     })
     if (!isEnabledForPR(pr.data, config.whitelist, config.blacklist)) {
+        console.log('mergeIfReady: Not enabled for this PR, aborting')
         return
     }
-    console.log('raw pr', pr)
+    console.log('raw pr.data', pr.data)
     console.log(
         'pr and mergeable',
         pr.data.number,
@@ -26,6 +29,7 @@ export default async function mergeIfReady(
         pr.data.mergeable_state,
     )
     if (canMerge(pr.data, config.whitelist, config.blacklist)) {
+        console.log('mergeIfReady: PR can be merged, starting merge')
         await client.pulls.merge({
             owner,
             repo,
@@ -33,5 +37,6 @@ export default async function mergeIfReady(
             sha,
             merge_method: config.method,
         })
+        console.log('mergeIfReady: merge completed')
     }
 }

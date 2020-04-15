@@ -12,6 +12,8 @@ export default async function main(core: CoreModule, github: GitHubModule) {
     console.log('config', JSON.stringify(config))
     console.log('context', JSON.stringify(github.context))
     const event = github.context.eventName
+    console.log('eventName', event)
+
     switch (event) {
         case 'pull_request':
             await prHandler(client, github.context, config)

@@ -13,6 +13,7 @@ export default async function reviewHandler(
     config: Config,
 ) {
     const event = context.payload as PullRequestReviewPayload
+    console.log('reviewHandler: starting mergeIfReady')
     await mergeIfReady(
         client,
         context.repo.owner,
@@ -21,4 +22,5 @@ export default async function reviewHandler(
         event.pull_request.head.sha,
         config,
     )
+    console.log('reviewHandler: mergeIfReady completed')
 }
