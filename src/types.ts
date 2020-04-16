@@ -10,4 +10,5 @@ export interface Config {
     whitelist: string[]
     blacklist: string[]
     method?: 'merge' | 'squash' | 'rebase'
+    passing_status_checks: string[]
 }

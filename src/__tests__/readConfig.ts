@@ -13,6 +13,7 @@ describe('config', () => {
                 whitelist: [],
                 blacklist: [],
                 method: undefined,
+                passing_status_checks: [],
             })
         })
         it('throws when types mismatch', () => {
@@ -36,12 +37,26 @@ describe('config', () => {
                     method: 'unknown string',
                 })
             }).toThrowError()
+            expect(() => {
+                parseConfig({
+                    passing_status_checks: {}
+                })
+            }).toThrowError()
         })
         it('assigns method', () => {
             expect(parseConfig({ method: 'merge' })).toEqual({
                 whitelist: [],
                 blacklist: [],
                 method: 'merge',
+                passing_status_checks: [],
+            })
+        })
+        it('assigns passing_status_checks', () => {
+            expect(parseConfig({ passing_status_checks: ['foo']})).toEqual({
+                whitelist: [],
+                blacklist: [],
+                method: undefined,
+                passing_status_checks: ['foo'],
             })
         })
     })
@@ -56,6 +71,7 @@ describe('config', () => {
         ).toEqual({
             whitelist: ['white'],
             blacklist: ['black'],
+            passing_status_checks: [],
         })
     })
     it('it parses whitelist', () => {
@@ -64,6 +80,7 @@ describe('config', () => {
         ).toEqual({
             whitelist: ['white'],
             blacklist: [],
+            passing_status_checks: [],
         })
     })
     it('it parses blacklist', () => {
@@ -72,6 +89,16 @@ describe('config', () => {
         ).toEqual({
             whitelist: [],
             blacklist: ['black'],
+            passing_status_checks: [],
+        })
+    })
+    it('it parses passing_status_checks', () => {
+        expect(
+            readConfig(path.join(__dirname, './configs/passing_status_checks.yml')),
+        ).toEqual({
+            whitelist: [],
+            blacklist: [],
+            passing_status_checks: ['mandatory-check'],
         })
     })
 })

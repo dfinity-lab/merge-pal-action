@@ -8,6 +8,44 @@ export default async function statusHandler(
     config: Config,
 ) {
     const event = context.payload as WebHooks.WebhookPayloadStatus
+    console.log('Status check for: ', event.context)
+    console.log('Status check state: ', event.state)
+
+    if (event.state !== 'success') {
+        console.log('Not a successful result status check, skipping')
+        return
+    }
+
+    // Performance fix: If this isn't the aggregate job that contains all others
+    // then there's nothing to do yet because we don't know that the PR is good
+    // to go.
+    //
+    // You could read this out of the branch protection rules, but that requires
+    // an API call, and the point is to not need to make API calls unless
+    // absolutely necessary.
+    //
+    // TODO: This could even be a separate action that runs before the others
+    // so we don't incur the overhead of needing to check out the repo
+
+    // If config.passing_status_checks is set then check to see if this is one
+    // we care about (if it's not set then we care about all status checks)
+    if (config.passing_status_checks.length) {
+        let check_ok = false
+        for (let check_name of config.passing_status_checks) {
+            if (check_name === event.context) {
+                check_ok = true
+                break
+            }
+        }
+
+        if (!check_ok) {
+            console.log(
+                `'${event.context}' not found in ${config.passing_status_checks}, skipping`,
+            )
+            return
+        }
+    }
+
     console.log('Status Payload:')
     console.log(event)
     const branchNames = event.branches.map((branch) => branch.name)

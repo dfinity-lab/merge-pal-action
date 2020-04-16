@@ -23,7 +23,9 @@ export function parseConfig(rawConfig: any): Config {
         whitelist: [],
         blacklist: [],
         method: undefined,
+        passing_status_checks: [],
     }
+
     if (rawConfig && rawConfig.whitelist) {
         if (Array.isArray(rawConfig.whitelist)) {
             result.whitelist = rawConfig.whitelist
@@ -53,6 +55,16 @@ export function parseConfig(rawConfig: any): Config {
             )
         }
         result.method = rawConfig.method
+    }
+
+    if (rawConfig && rawConfig.passing_status_checks) {
+        if (Array.isArray(rawConfig.passing_status_checks)) {
+            result.passing_status_checks = rawConfig.passing_status_checks
+        } else {
+            throw new InvalidConfigurationError(
+                '`passing_status_checks` should be an array',
+            )
+        }
     }
     return result
 }

@@ -114,6 +114,18 @@ It can hold the following fields:
 | whitelist | string[] | whitelisted labels to perform automerge |
 | blacklist | string[] | blacklisted labels to forbid automerge |
 | method | "merge" \| "squash" \| "rebase" | method to use when merging |
+| passing_status_checks | string[] | context names of status checks that must pass |
+
+Merge Pal is normally run for every change to a status check. This can be a problem
+if you have multiple status checks but only some of them need to pass for the PR to
+be mergeable.
+
+If `passing_status_checks` is empty then Merge Pal will fetch PR details on every
+status check. If you have many status checks, or many open PRs then this can
+exhaust your GitHub API quota.
+
+If `passing_status_checks` is set then Merge Pal will only act on status changes
+to those status checks, which can significantly reduce the API usage.
 
 example:
 
@@ -124,4 +136,6 @@ blacklist:
   - wip
   - do-not-merge
 method: squash
+passing_status_checks:
+  - ci:all-jobs
 ```

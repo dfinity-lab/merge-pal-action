@@ -54,9 +54,11 @@ describe('mergeIfReady', () => {
         } as Octokit.Response<Octokit.PullsGetResponse>
         const whitelist = []
         const blacklist = []
+        const passing_status_checks = []
         const config: Config = {
             whitelist,
             blacklist,
+            passing_status_checks,
         }
         isEnabledForPR.mockReturnValueOnce(false)
         client.pulls.get.mockReturnValueOnce(mockPR)
@@ -102,6 +104,7 @@ describe('mergeIfReady', () => {
             whitelist: [],
             blacklist: [],
             method,
+            passing_status_checks: []
         }
 
         await mergeIfReady(
@@ -144,7 +147,8 @@ describe('mergeIfReady', () => {
         } as Octokit.Response<Octokit.PullsGetResponse>
         const config: Config = {
             whitelist: [],
-            blacklist: []
+            blacklist: [],
+            passing_status_checks: [],
         }
         isEnabledForPR.mockReturnValueOnce(true)
         client.pulls.get.mockReturnValueOnce(mockPR)
