@@ -10,11 +10,7 @@ export function canMergeByMergeable(pr: Octokit.PullsGetResponse) {
 export function canMergeByMergeableState(pr: Octokit.PullsGetResponse) {
     return pr.mergeable_state === 'clean' || pr.mergeable_state === 'unstable'
 }
-export default function canMerge(
-    pr: Octokit.PullsGetResponse,
-    whitelist: string[],
-    blacklist: string[],
-) {
+export default function canMerge(pr: Octokit.PullsGetResponse) {
     const byMergeable = canMergeByMergeable(pr)
     const byMergeableState = canMergeByMergeableState(pr)
     console.log('by mergeable', byMergeable)

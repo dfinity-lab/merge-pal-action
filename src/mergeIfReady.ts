@@ -28,7 +28,7 @@ export default async function mergeIfReady(
         pr.data.mergeable,
         pr.data.mergeable_state,
     )
-    if (canMerge(pr.data, config.whitelist, config.blacklist)) {
+    if (canMerge(pr.data)) {
         console.log('mergeIfReady: PR can be merged, starting merge')
         await client.pulls.merge({
             owner,

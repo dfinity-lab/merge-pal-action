@@ -10252,7 +10252,7 @@ function canMergeByMergeableState(pr) {
     return pr.mergeable_state === 'clean' || pr.mergeable_state === 'unstable';
 }
 exports.canMergeByMergeableState = canMergeByMergeableState;
-function canMerge(pr, whitelist, blacklist) {
+function canMerge(pr) {
     const byMergeable = canMergeByMergeable(pr);
     const byMergeableState = canMergeByMergeableState(pr);
     console.log('by mergeable', byMergeable);
@@ -11876,7 +11876,7 @@ function mergeIfReady(client, owner, repo, number, sha, config) {
         }
         console.log('raw pr.data', pr.data);
         console.log('pr and mergeable', pr.data.number, pr.data.mergeable, pr.data.mergeable_state);
-        if (canMerge_1.default(pr.data, config.whitelist, config.blacklist)) {
+        if (canMerge_1.default(pr.data)) {
             console.log('mergeIfReady: PR can be merged, starting merge');
             yield client.pulls.merge({
                 owner,

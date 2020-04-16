@@ -113,7 +113,7 @@ describe('mergeIfReady', () => {
             pull_number: prNumber,
         })
         expect(canMerge).toHaveBeenCalledTimes(1)
-        expect(canMerge).toHaveBeenCalledWith(mockPR.data, whitelist, blacklist)
+        expect(canMerge).toHaveBeenCalledWith(mockPR.data)
         expect(merge).toHaveBeenCalledTimes(1)
         expect(merge).toHaveBeenCalledWith({
             owner,
@@ -165,7 +165,7 @@ describe('mergeIfReady', () => {
             pull_number: prNumber,
         })
         expect(canMerge).toHaveBeenCalledTimes(1)
-        expect(canMerge).toHaveBeenCalledWith(mockPR.data, whitelist, blacklist)
+        expect(canMerge).toHaveBeenCalledWith(mockPR.data)
         expect(merge).toHaveBeenCalledTimes(0)
     })
 })
