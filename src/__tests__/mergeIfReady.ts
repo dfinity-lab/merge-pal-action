@@ -1,39 +1,57 @@
+import Octokit = require('@octokit/rest')
 const isEnabledForPR = jest.fn()
 jest.mock('../isEnabledForPR', () => isEnabledForPR)
 const canMerge = jest.fn()
 jest.mock('../canMerge', () => canMerge)
 import mergeIfReady from '../mergeIfReady'
 import { Client, Config } from '../types'
-const merge = jest.fn()
-const get = jest.fn()
 
-const client = {
-    pulls: {
-        merge,
-        get,
-    },
+/**
+ * Generates a fake PullsGetResponse structure with necessary properties
+ * filled out.
+ * 
+ * @param number Pull Request number
+ * @param mergeable Whether this PR should be mergeable
+ */
+function getPullRequest(number: number, mergeable: boolean): Octokit.PullsGetResponse {
+    return {
+        labels: [] as Array<Octokit.PullsGetResponseLabelsItem>,
+        number,
+        head: { sha: 'abcdef' },
+        mergeable,
+        mergeable_state: 'clean'
+    } as Octokit.PullsGetResponse
+}
+
+/**
+ * Returns a fake Client.
+ * 
+ * Can't return the actual Client type because types on the `merge` and
+ * `get` properties differ.
+ */
+function getClient() {
+    return {
+        pulls: {
+            merge: jest.fn(),
+            get: jest.fn()
+        }
+    }
 }
 
 describe('mergeIfReady', () => {
-    beforeEach(() => {
-        merge.mockClear()
-        get.mockClear()
+    beforeEach(async () => {
         canMerge.mockClear()
         isEnabledForPR.mockClear()
     })
     it('exits early if automation is not enabled', async () => {
+        const client = getClient()
         const prNumber = 42
         const repo = 'repo'
         const owner = 'owner'
-        const sha = 'abcdef'
         canMerge.mockReturnValue(false)
         const mockPR = {
-            data: {
-                number: prNumber,
-                mergeable: false,
-                mergeable_state: 'clean',
-            },
-        }
+            data: getPullRequest(prNumber, false)
+        } as Octokit.Response<Octokit.PullsGetResponse>
         const whitelist = []
         const blacklist = []
         const config: Config = {
@@ -41,29 +59,25 @@ describe('mergeIfReady', () => {
             blacklist,
         }
         isEnabledForPR.mockReturnValueOnce(false)
-        get.mockReturnValueOnce(mockPR)
+        client.pulls.get.mockReturnValueOnce(mockPR)
         await mergeIfReady(
             (client as unknown) as Client,
             owner,
             repo,
-            prNumber,
-            sha,
+            mockPR.data,
             config,
         )
         expect(isEnabledForPR).toHaveBeenCalledTimes(1)
         expect(isEnabledForPR).toHaveBeenCalledWith(
-            mockPR.data,
+            [],
             config.whitelist,
             config.blacklist,
         )
-        expect(get).toHaveBeenCalledTimes(1)
-        expect(get).toHaveBeenCalledWith({
-            owner,
-            repo,
-            pull_number: prNumber,
-        })
+
+        // Should not have made any API calls
+        expect(client.pulls.get).toHaveBeenCalledTimes(0)
         expect(canMerge).toHaveBeenCalledTimes(0)
-        expect(merge).toHaveBeenCalledTimes(0)
+        expect(client.pulls.merge).toHaveBeenCalledTimes(0)
     })
     it.each`
         method
@@ -72,100 +86,89 @@ describe('mergeIfReady', () => {
         ${'squash'}
         ${'rebase'}
     `('merges pr with $method if it can be merged', async ({ method }) => {
+        const client = getClient()
         const prNumber = 42
         const repo = 'repo'
         const owner = 'owner'
-        const sha = 'abcdef'
         const mockPR = {
-            data: {
-                number: prNumber,
-                mergeable: true,
-                mergeable_state: 'clean',
-            },
+            data: getPullRequest(prNumber, true)
         }
+
         isEnabledForPR.mockReturnValueOnce(true)
-        get.mockReturnValue(mockPR)
+        client.pulls.get.mockReturnValue(mockPR)
         canMerge.mockReturnValue(true)
-        const whitelist = []
-        const blacklist = []
+
         const config: Config = {
-            whitelist,
-            blacklist,
+            whitelist: [],
+            blacklist: [],
             method,
         }
+
         await mergeIfReady(
             (client as unknown) as Client,
             owner,
             repo,
-            prNumber,
-            sha,
+            mockPR.data,
             config,
         )
         expect(isEnabledForPR).toHaveBeenCalledWith(
-            mockPR.data,
+            [],
             config.whitelist,
             config.blacklist,
         )
-        expect(get).toHaveBeenCalledTimes(1)
-        expect(get).toHaveBeenCalledWith({
+        expect(client.pulls.get).toHaveBeenCalledTimes(1)
+        expect(client.pulls.get).toHaveBeenCalledWith({
             owner,
             repo,
             pull_number: prNumber,
         })
         expect(canMerge).toHaveBeenCalledTimes(1)
         expect(canMerge).toHaveBeenCalledWith(mockPR.data)
-        expect(merge).toHaveBeenCalledTimes(1)
-        expect(merge).toHaveBeenCalledWith({
+        expect(client.pulls.merge).toHaveBeenCalledTimes(1)
+        expect(client.pulls.merge).toHaveBeenCalledWith({
             owner,
             repo,
             pull_number: prNumber,
-            sha,
+            sha: mockPR.data.head.sha,
             merge_method: method,
         })
     })
     it('does not merge pr if it is not allowed to merge', async () => {
+        const client = getClient()
         const prNumber = 42
         const repo = 'repo'
         const owner = 'owner'
-        const sha = 'abcdef'
         canMerge.mockReturnValue(false)
         const mockPR = {
-            data: {
-                number: prNumber,
-                mergeable: false,
-                mergeable_state: 'clean',
-            },
-        }
-        const whitelist = []
-        const blacklist = []
+            data: getPullRequest(prNumber, false)
+        } as Octokit.Response<Octokit.PullsGetResponse>
         const config: Config = {
-            whitelist,
-            blacklist,
+            whitelist: [],
+            blacklist: []
         }
         isEnabledForPR.mockReturnValueOnce(true)
-        get.mockReturnValueOnce(mockPR)
+        client.pulls.get.mockReturnValueOnce(mockPR)
         await mergeIfReady(
             (client as unknown) as Client,
             owner,
             repo,
-            prNumber,
-            sha,
+            mockPR.data,
             config,
         )
         expect(isEnabledForPR).toHaveBeenCalledTimes(1)
         expect(isEnabledForPR).toHaveBeenCalledWith(
-            mockPR.data,
+            [],
             config.whitelist,
             config.blacklist,
         )
-        expect(get).toHaveBeenCalledTimes(1)
-        expect(get).toHaveBeenCalledWith({
+        expect(client.pulls.get).toHaveBeenCalledTimes(1)
+        expect(client.pulls.get).toHaveBeenCalledWith({
             owner,
             repo,
             pull_number: prNumber,
         })
         expect(canMerge).toHaveBeenCalledTimes(1)
         expect(canMerge).toHaveBeenCalledWith(mockPR.data)
-        expect(merge).toHaveBeenCalledTimes(0)
+        expect(client.pulls.merge).toHaveBeenCalledTimes(0)
     })
 })

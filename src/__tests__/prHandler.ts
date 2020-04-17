@@ -35,8 +35,7 @@ describe('merge processor', () => {
             client,
             owner,
             repo,
-            100500,
-            'abcdef',
+            context.payload.pull_request,
             fakeConfig,
         )
     })

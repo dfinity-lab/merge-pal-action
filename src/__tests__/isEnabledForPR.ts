@@ -15,15 +15,15 @@ export function createPR(
 
 describe('isEnabledForPR', () => {
     it('allows automation with any labels if blacklist and whitelist are empty', () => {
-        expect(isEnabledForPR(createPR(false, '', []), [], [])).toBe(true)
-        expect(isEnabledForPR(createPR(false, '', ['white']), [], [])).toBe(
+        expect(isEnabledForPR([], [], [])).toBe(true)
+        expect(isEnabledForPR(['white'], [], [])).toBe(
             true,
         )
-        expect(isEnabledForPR(createPR(false, '', ['black']), [], [])).toBe(
+        expect(isEnabledForPR(['black'], [], [])).toBe(
             true,
         )
         expect(
-            isEnabledForPR(createPR(false, '', ['white', 'black']), [], []),
+            isEnabledForPR(['white', 'black'], [], []),
         ).toBe(true)
     })
     it('allows automation if whitelist label exists while blacklist is empty', () => {
@@ -31,7 +31,7 @@ describe('isEnabledForPR', () => {
         const blacklist = []
         expect(
             isEnabledForPR(
-                createPR(false, '', ['white', 'black']),
+                ['white', 'black'],
                 whitelist,
                 blacklist,
             ),
@@ -42,7 +42,7 @@ describe('isEnabledForPR', () => {
         const blacklist = []
         expect(
             isEnabledForPR(
-                createPR(false, '', ['yellow', 'black']),
+                ['yellow', 'black'],
                 whitelist,
                 blacklist,
             ),
@@ -52,7 +52,7 @@ describe('isEnabledForPR', () => {
         const whitelist = ['white']
         const blacklist = ['black']
         expect(
-            isEnabledForPR(createPR(false, '', []), whitelist, blacklist),
+            isEnabledForPR([], whitelist, blacklist),
         ).toEqual(false)
     })
     it('disallows automation even if one label matches blacklist', () => {
@@ -60,7 +60,7 @@ describe('isEnabledForPR', () => {
         const blacklist = ['black']
         expect(
             isEnabledForPR(
-                createPR(false, '', ['yellow', 'white', 'black']),
+                ['yellow', 'white', 'black'],
                 whitelist,
                 blacklist,
             ),
@@ -71,7 +71,7 @@ describe('isEnabledForPR', () => {
         const blacklist = ['black']
         expect(
             isEnabledForPR(
-                createPR(false, '', ['yellow', 'white']),
+                ['yellow', 'white'],
                 whitelist,
                 blacklist,
             ),
@@ -82,7 +82,7 @@ describe('isEnabledForPR', () => {
         const blacklist = ['black']
         expect(
             isEnabledForPR(
-                createPR(false, '', ['white', 'black']),
+                ['white', 'black'],
                 whitelist,
                 blacklist,
             ),

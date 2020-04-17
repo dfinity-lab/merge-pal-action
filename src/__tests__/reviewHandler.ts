@@ -41,8 +41,7 @@ describe('review handler', () => {
             client,
             owner,
             repo,
-            42,
-            'abcdef',
+            context.payload.pull_request,
             fakeConfig,
         )
     })

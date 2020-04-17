@@ -1,4 +1,6 @@
-import { Client, Context, PullRequestPayload, Config } from './types'
+import WebHooks = require('@octokit/webhooks')
+
+import { Client, Context, Config } from './types'
 import mergeIfReady from './mergeIfReady'
 
 export default async function prHandler(
@@ -9,10 +11,7 @@ export default async function prHandler(
     const {
         repo: { repo, owner },
     } = context
-    const pr = context.payload.pull_request as PullRequestPayload
-    const {
-        number,
-        head: { sha },
-    } = pr
-    await mergeIfReady(client, owner, repo, number, sha, config)
+    const pr = context.payload
+        .pull_request as WebHooks.WebhookPayloadPullRequestPullRequest
+    await mergeIfReady(client, owner, repo, pr, config)
 }

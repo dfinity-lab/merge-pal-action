@@ -1,4 +1,5 @@
-import { Client, Context, StatusPayload, Config } from './types'
+import WebHooks = require('@octokit/webhooks')
+import { Client, Context, Config } from './types'
 import mergeIfReady from './mergeIfReady'
 
 export default async function statusHandler(
@@ -6,7 +7,7 @@ export default async function statusHandler(
     context: Context,
     config: Config,
 ) {
-    const event = context.payload as StatusPayload
+    const event = context.payload as WebHooks.WebhookPayloadStatus
     console.log('Status Payload:')
     console.log(event)
     const branchNames = event.branches.map((branch) => branch.name)
@@ -49,8 +50,7 @@ export default async function statusHandler(
                 client,
                 context.repo.owner,
                 context.repo.repo,
-                pr.number,
-                event.sha,
+                pr,
                 config,
             ),
         ),

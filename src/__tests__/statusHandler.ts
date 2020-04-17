@@ -1,3 +1,4 @@
+import Octokit = require('@octokit/rest')
 const mergeIfReady = jest.fn()
 jest.mock('../mergeIfReady', () => mergeIfReady)
 
@@ -43,8 +44,37 @@ describe('status handler', () => {
         mockList.mockReturnValueOnce({ data: [] })
         mockList.mockReturnValueOnce({ data: [{ number: 2 }] })
         mockList.mockReturnValueOnce({ data: [{ number: 3 }] })
-        get.mockReturnValueOnce({ data: { number: 2, mergeable: false } })
-        get.mockReturnValueOnce({ data: { number: 3, mergeable: true } })
+
+        const mockResponseItem1 = {
+            number: 2,
+        } as Octokit.PullsListResponseItem
+        
+        const mockPR1 = {
+            labels: [] as Array<Octokit.PullsGetResponseLabelsItem>,
+            number: 2,
+            head: {
+                sha: 'abcdef'
+            },
+            mergeable: false,
+            mergeable_state: 'clean',
+        } as Octokit.PullsGetResponse
+
+        const mockResponseItem2 = {
+            number: 3,
+        } as Octokit.PullsListResponseItem
+
+        const mockPR2 = {
+            labels: [] as Array<Octokit.PullsGetResponseLabelsItem>,
+            number: 3,
+            head: {
+                sha: 'abcdef'
+            },
+            mergeable: true,
+            mergeable_state: 'clean',
+        } as Octokit.PullsGetResponse
+
+        get.mockReturnValueOnce({ data: mockPR1})
+        get.mockReturnValueOnce({ data: mockPR2})
         await statusHandler(
             (client as unknown) as Client,
             (context as unknown) as Context,
@@ -55,16 +85,14 @@ describe('status handler', () => {
             client,
             owner,
             repo,
-            2,
-            'abcdef',
+            mockResponseItem1,
             fakeConfig,
         )
         expect(mergeIfReady).toHaveBeenCalledWith(
             client,
             owner,
             repo,
-            3,
-            'abcdef',
+            mockResponseItem2,
             fakeConfig,
         )
         expect(client.pulls.list).toHaveBeenCalledTimes(3)

@@ -4511,7 +4511,8 @@ function pushHandler(client, context, config) {
         console.log('opened prs', openedPrs);
         yield Promise.all(openedPrs.data.map((pr) => {
             console.log('pushHandler: Processing PR: ', pr);
-            if (!isEnabledForPR_1.default(pr, config.whitelist, config.blacklist)) {
+            const label_names = pr.labels.map((label) => label.name);
+            if (!isEnabledForPR_1.default(label_names, config.whitelist, config.blacklist)) {
                 console.log('pushHandler: not enabled for this PR, returning');
                 return;
             }
@@ -9756,17 +9757,16 @@ function addHook (state, kind, name, hook) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function isEnabledForPR(pr, whitelist, blacklist) {
+function isEnabledForPR(label_names, whitelist, blacklist) {
     if (whitelist.length === 0 && blacklist.length === 0) {
         console.log('isEnabledForPR: whitelist and blacklist are both empty, returning true');
         return true;
     }
     console.log('isEnabledForPR: whitelist: ', whitelist);
     console.log('isEnabledForPR: blacklist: ', blacklist);
-    const labels = pr.labels.map((label) => label.name);
-    console.log('isEnabledForPR: PR labels: ', labels);
-    const matchedBlack = labels.filter((label) => blacklist.includes(label));
-    const matchedWhite = labels.filter((label) => whitelist.includes(label));
+    console.log('isEnabledForPR: PR labels: ', label_names);
+    const matchedBlack = label_names.filter((label) => blacklist.includes(label));
+    const matchedWhite = label_names.filter((label) => whitelist.includes(label));
     console.log('isEnabledForPR: matchedBlack: ', matchedBlack);
     console.log('isEnabledForPR: matchedWhite: ', matchedWhite);
     if (blacklist.length > 0 && matchedBlack.length > 0) {
@@ -10256,10 +10256,6 @@ exports.canMergeByMergeable = canMergeByMergeable;
 // (per https://github.community/t5/GitHub-API-Development-and/PullRequest-mergeable-state-possible-values/td-p/21943)
 // with some possible values noted in https://github.com/octokit/octokit.net/issues/1763
 //
-// It only exists in the payload of the webhook (i.e., the type
-// WebhookPayloadPullRequestPullRequest), not in responses to
-// client.pulls.list() (in statusHandler.ts), which makes using it tricky.
-//
 // This is not the case in v4 of the API
 function canMergeByMergeableState(pr) {
     return pr.mergeable_state === 'clean' || pr.mergeable_state === 'unstable';
@@ -10583,7 +10579,7 @@ function statusHandler(client, context, config) {
         });
         console.log('PRs after flattening');
         console.log(flatPRs);
-        yield Promise.all(flatPRs.map((pr) => mergeIfReady_1.default(client, context.repo.owner, context.repo.repo, pr.number, event.sha, config)));
+        yield Promise.all(flatPRs.map((pr) => mergeIfReady_1.default(client, context.repo.owner, context.repo.repo, pr, config)));
     });
 }
 exports.default = statusHandler;
@@ -10710,7 +10706,7 @@ function reviewHandler(client, context, config) {
     return __awaiter(this, void 0, void 0, function* () {
         const event = context.payload;
         console.log('reviewHandler: starting mergeIfReady');
-        yield mergeIfReady_1.default(client, context.repo.owner, context.repo.repo, event.pull_request.number, event.pull_request.head.sha, config);
+        yield mergeIfReady_1.default(client, context.repo.owner, context.repo.repo, event.pull_request, config);
         console.log('reviewHandler: mergeIfReady completed');
     });
 }
@@ -11875,27 +11871,58 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const canMerge_1 = __importDefault(__webpack_require__(592));
 const isEnabledForPR_1 = __importDefault(__webpack_require__(520));
-function mergeIfReady(client, owner, repo, number, sha, config) {
+function mergeIfReady(client, owner, repo, pr, config) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log('mergeIfReady: start');
-        const pr = yield client.pulls.get({
-            owner,
-            repo,
-            pull_number: number,
-        });
-        if (!isEnabledForPR_1.default(pr.data, config.whitelist, config.blacklist)) {
+        // The different types for 'pr' do not agree on the properties of the
+        // objects in the 'labels' array, but they all have a 'name' property.
+        const labels = pr.labels;
+        const label_names = labels.map((label) => label.name);
+        if (!isEnabledForPR_1.default(label_names, config.whitelist, config.blacklist)) {
             console.log('mergeIfReady: Not enabled for this PR, aborting');
             return;
         }
-        console.log('raw pr.data', pr.data);
-        console.log('pr and mergeable', pr.data.number, pr.data.mergeable, pr.data.mergeable_state);
-        if (canMerge_1.default(pr.data)) {
+        // Although webhook payloads contain "mergeable" and "mergeable_status"
+        // values, testing shows that you can't trust them.
+        //
+        // Per https://developer.github.com/v3/git/#checking-mergeability-of-pull-requests
+        // you have to make an explicit request for the PR in order to cause
+        // GitHub to check if it's mergeable.
+        const pr_refreshed = yield client.pulls.get({
+            owner,
+            repo,
+            pull_number: pr.number,
+        });
+        const pr_data = pr_refreshed.data;
+        console.log('raw pr', pr);
+        console.log('client.pulls.get pr', pr_data);
+        console.log('pr and mergeable', pr_data.number, pr_data.mergeable);
+        // If mergeable_state is "behind" then this PR can't be merged because
+        // it's out of date. Try and rebase it on the most commit on its base.
+        // This works, want confirmation that the results are as expected,
+        // commenting out temporarily
+        // if (pr_data.mergeable_state === 'behind') {
+        //     console.log('PR is behind base: {}', pr_data.base.ref)
+        //     console.log('Updating branch, {}, {}, {}, {}',
+        //         pr_data.head.sha,
+        //         pr_data.number,
+        //         pr_data.head.repo.name,
+        //         pr_data.head.user.login)
+        //     await client.pulls.updateBranch({
+        //         expected_head_sha: pr_data.head.sha,
+        //         pull_number: pr_data.number,
+        //         repo: pr_data.head.repo.name,
+        //         owner: pr_data.head.user.login,
+        //     })
+        //     return;
+        // }
+        if (canMerge_1.default(pr_data)) {
             console.log('mergeIfReady: PR can be merged, starting merge');
             yield client.pulls.merge({
                 owner,
                 repo,
-                pull_number: number,
-                sha,
+                pull_number: pr.number,
+                sha: pr.head.sha,
                 merge_method: config.method,
             });
             console.log('mergeIfReady: merge completed');
@@ -15148,9 +15175,9 @@ const mergeIfReady_1 = __importDefault(__webpack_require__(743));
 function prHandler(client, context, config) {
     return __awaiter(this, void 0, void 0, function* () {
         const { repo: { repo, owner }, } = context;
-        const pr = context.payload.pull_request;
-        const { number, head: { sha }, } = pr;
-        yield mergeIfReady_1.default(client, owner, repo, number, sha, config);
+        const pr = context.payload
+            .pull_request;
+        yield mergeIfReady_1.default(client, owner, repo, pr, config);
     });
 }
 exports.default = prHandler;

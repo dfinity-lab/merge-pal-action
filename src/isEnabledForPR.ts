@@ -1,6 +1,5 @@
-import Octokit = require('@octokit/rest')
 export default function isEnabledForPR(
-    pr: Octokit.PullsGetResponse | Octokit.PullsListResponseItem,
+    label_names: string[],
     whitelist: string[],
     blacklist: string[],
 ) {
@@ -14,12 +13,14 @@ export default function isEnabledForPR(
     console.log('isEnabledForPR: whitelist: ', whitelist)
     console.log('isEnabledForPR: blacklist: ', blacklist)
 
-    const labels = pr.labels.map((label) => label.name)
+    console.log('isEnabledForPR: PR labels: ', label_names)
 
-    console.log('isEnabledForPR: PR labels: ', labels)
-
-    const matchedBlack = labels.filter((label) => blacklist.includes(label))
-    const matchedWhite = labels.filter((label) => whitelist.includes(label))
+    const matchedBlack = label_names.filter((label) =>
+        blacklist.includes(label),
+    )
+    const matchedWhite = label_names.filter((label) =>
+        whitelist.includes(label),
+    )
 
     console.log('isEnabledForPR: matchedBlack: ', matchedBlack)
     console.log('isEnabledForPR: matchedWhite: ', matchedWhite)

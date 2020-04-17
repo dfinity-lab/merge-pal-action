@@ -1,10 +1,5 @@
-import {
-    Client,
-    Context,
-    StatusPayload,
-    PullRequestReviewPayload,
-    Config,
-} from './types'
+import WebHooks = require('@octokit/webhooks')
+import { Client, Context, Config } from './types'
 import mergeIfReady from './mergeIfReady'
 
 export default async function reviewHandler(
@@ -12,14 +7,13 @@ export default async function reviewHandler(
     context: Context,
     config: Config,
 ) {
-    const event = context.payload as PullRequestReviewPayload
+    const event = context.payload as WebHooks.WebhookPayloadPullRequestReview
     console.log('reviewHandler: starting mergeIfReady')
     await mergeIfReady(
         client,
         context.repo.owner,
         context.repo.repo,
-        event.pull_request.number,
-        event.pull_request.head.sha,
+        event.pull_request,
         config,
     )
     console.log('reviewHandler: mergeIfReady completed')

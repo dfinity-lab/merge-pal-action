@@ -1,3 +1,4 @@
+import Octokit = require('@octokit/rest')
 const isEnabledForPR = jest.fn()
 jest.mock('../isEnabledForPR', () => isEnabledForPR)
 import pushHandler from '../pushHandler'
@@ -38,6 +39,9 @@ describe('pushHandler', () => {
         const mockPR = {
             number: 10,
             head: { sha: 'def' },
+            labels: [{
+                name: 'foo'
+            }] as Array<Octokit.PullsGetResponseLabelsItem>,
         }
         mockList.mockResolvedValueOnce({
             data: [mockPR],
@@ -54,7 +58,7 @@ describe('pushHandler', () => {
             base: 'master',
         })
         expect(isEnabledForPR).toBeCalledTimes(1)
-        expect(isEnabledForPR).lastCalledWith(mockPR, undefined, undefined)
+        expect(isEnabledForPR).lastCalledWith(['foo'], undefined, undefined)
         expect(mockUpdateBranch).toHaveBeenCalledTimes(0)
     })
     it('updates all pull requests whose target branch is the one that was pushed', async () => {
@@ -72,10 +76,16 @@ describe('pushHandler', () => {
         const mockPR1 = {
             number: 10,
             head: { sha: 'def' },
+            labels: [{
+                name: 'foo'
+            }] as Array<Octokit.PullsGetResponseLabelsItem>,
         }
         const mockPR2 = {
             number: 100,
             head: { sha: 'xyz' },
+            labels: [{
+                name: 'foo'
+            }] as Array<Octokit.PullsGetResponseLabelsItem>,
         }
         mockList.mockResolvedValueOnce({
             data: [mockPR1, mockPR2],
@@ -95,13 +105,13 @@ describe('pushHandler', () => {
         expect(isEnabledForPR).toBeCalledTimes(2)
         expect(isEnabledForPR).toHaveBeenNthCalledWith(
             1,
-            mockPR1,
+            ['foo'],
             undefined,
             undefined,
         )
         expect(isEnabledForPR).toHaveBeenNthCalledWith(
             2,
-            mockPR2,
+            ['foo'],
             undefined,
             undefined,
         )
