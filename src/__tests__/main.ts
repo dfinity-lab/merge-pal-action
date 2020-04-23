@@ -34,7 +34,6 @@ const fakeClient = {
     }
 }
 
-
 describe('main behavior', () => {
     afterEach(() => {
         mockStatusHandler.mockClear()
@@ -47,6 +46,7 @@ describe('main behavior', () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
                 getInput: mockInput,
+                setFailed: jest.fn(),
             }
             const github = {
                 context: {},
@@ -65,6 +65,7 @@ describe('main behavior', () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
                 getInput: mockInput,
+                setFailed: jest.fn(),
             }
             const github = {
                 context: {
@@ -93,6 +94,7 @@ describe('main behavior', () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
                 getInput: mockInput,
+                setFailed: jest.fn(),
             }
             const github = {
                 context: {
@@ -121,6 +123,7 @@ describe('main behavior', () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
                 getInput: mockInput,
+                setFailed: jest.fn(),
             }
 
             const github = {
@@ -150,6 +153,7 @@ describe('main behavior', () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
                 getInput: mockInput,
+                setFailed: jest.fn(),
             }
             const github = {
                 context: {

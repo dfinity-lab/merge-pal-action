@@ -2013,7 +2013,14 @@ function main(core, github) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput('token');
         const client = new github.GitHub(token);
-        const config = readConfig_1.default('.mergepal.yml');
+        let config;
+        try {
+            config = readConfig_1.default('.mergepal.yml');
+        }
+        catch (e) {
+            core.setFailed(e.message);
+            return;
+        }
         console.log('config', JSON.stringify(config));
         console.log('context', JSON.stringify(github.context));
         const event = github.context.eventName;
@@ -13548,14 +13555,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(__webpack_require__(747));
 const js_yaml_1 = __importDefault(__webpack_require__(414));
+class InvalidConfigurationError extends Error {
+    constructor(message) {
+        super(message);
+        // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+        Object.setPrototypeOf(this, InvalidConfigurationError.prototype);
+    }
+}
+exports.InvalidConfigurationError = InvalidConfigurationError;
+class MissingConfigurationError extends Error {
+    constructor(message) {
+        super(message);
+        // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
+        Object.setPrototypeOf(this, MissingConfigurationError);
+    }
+}
+exports.MissingConfigurationError = MissingConfigurationError;
 function parseConfig(rawConfig) {
-    const result = { whitelist: [], blacklist: [], method: undefined };
+    const result = {
+        whitelist: [],
+        blacklist: [],
+        method: undefined,
+    };
     if (rawConfig && rawConfig.whitelist) {
         if (Array.isArray(rawConfig.whitelist)) {
             result.whitelist = rawConfig.whitelist;
         }
         else {
-            throw new Error('`whitelist` should be an array');
+            throw new InvalidConfigurationError('`whitelist` should be an array');
         }
     }
     if (rawConfig && rawConfig.blacklist) {
@@ -13563,14 +13590,14 @@ function parseConfig(rawConfig) {
             result.blacklist = rawConfig.blacklist;
         }
         else {
-            throw new Error('`blacklist` should be an array');
+            throw new InvalidConfigurationError('`blacklist` should be an array');
         }
     }
     if (rawConfig && rawConfig.method) {
         const allowedString = ['squash', 'merge', 'rebase'];
         if (typeof rawConfig.method !== 'string' ||
             !allowedString.includes(rawConfig.method)) {
-            throw new Error(`'method' should be either 'merge', 'rebase', 'squash' or 'undefined', got ${rawConfig.method}`);
+            throw new InvalidConfigurationError(`'method' should be either 'merge', 'rebase', 'squash' or 'undefined', got ${rawConfig.method}`);
         }
         result.method = rawConfig.method;
     }
@@ -13582,8 +13609,7 @@ function getFileData(filename) {
         return fs.readFileSync(filename).toString();
     }
     catch (error) {
-        console.log(`Did not find config ${filename}`);
-        return '';
+        throw new MissingConfigurationError(`Did not find config ${filename}: ${error}`);
     }
 }
 function readConfig(filename) {

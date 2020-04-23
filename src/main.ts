@@ -1,5 +1,5 @@
 import prHandler from './prHandler'
-import { CoreModule, GitHubModule } from './types'
+import { Config, CoreModule, GitHubModule } from './types'
 import statusHandler from './statusHandler'
 import reviewHandler from './reviewHandler'
 import pushHandler from './pushHandler'
@@ -8,7 +8,14 @@ import readConfig from './readConfig'
 export default async function main(core: CoreModule, github: GitHubModule) {
     const token = core.getInput('token')
     const client = new github.GitHub(token)
-    const config = readConfig('.mergepal.yml')
+    let config: Config
+    try {
+        config = readConfig('.mergepal.yml')
+    } catch (e) {
+        core.setFailed(e.message)
+        return
+    }
+
     console.log('config', JSON.stringify(config))
     console.log('context', JSON.stringify(github.context))
     const event = github.context.eventName

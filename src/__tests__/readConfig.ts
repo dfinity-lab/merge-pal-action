@@ -45,12 +45,11 @@ describe('config', () => {
             })
         })
     })
-    it('provides default config when file is absent', () => {
-        expect(readConfig(path.join(__dirname, '.mergepal.yml'))).toEqual({
-            whitelist: [],
-            blacklist: [],
-        })
-    })
+    it('throws when config file is missing', () => {
+        expect(() => {
+            readConfig(path.join(__dirname, '.mergepal.yml'))
+        }).toThrowError()
+    })    
     it('it parses whitelist and blacklist', () => {
         expect(
             readConfig(path.join(__dirname, './configs/whiteandblack.yml')),
