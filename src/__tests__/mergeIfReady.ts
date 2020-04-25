@@ -56,6 +56,7 @@ describe('mergeIfReady', () => {
         const blacklist = []
         const passing_status_checks = []
         const config: Config = {
+            dry_run: false,
             whitelist,
             blacklist,
             passing_status_checks,
@@ -101,6 +102,7 @@ describe('mergeIfReady', () => {
         canMerge.mockReturnValue(true)
 
         const config: Config = {
+            dry_run: false,
             whitelist: [],
             blacklist: [],
             method,
@@ -146,6 +148,7 @@ describe('mergeIfReady', () => {
             data: getPullRequest(prNumber, false)
         } as Octokit.Response<Octokit.PullsGetResponse>
         const config: Config = {
+            dry_run: false,
             whitelist: [],
             blacklist: [],
             passing_status_checks: [],
@@ -173,6 +176,58 @@ describe('mergeIfReady', () => {
         })
         expect(canMerge).toHaveBeenCalledTimes(1)
         expect(canMerge).toHaveBeenCalledWith(mockPR.data)
+        expect(client.pulls.merge).toHaveBeenCalledTimes(0)
+    })
+    it.each`
+        method
+        ${undefined}
+        ${'merge'}
+        ${'squash'}
+        ${'rebase'}
+    `('does not merge if dry_run is enabled', async ({ method }) => {
+        const client = getClient()
+        const prNumber = 42
+        const repo = 'repo'
+        const owner = 'owner'
+        const mockPR = {
+            data: getPullRequest(prNumber, true)
+        } as Octokit.Response<Octokit.PullsGetResponse>
+        isEnabledForPR.mockReturnValueOnce(true)
+        client.pulls.get.mockReturnValue(mockPR)
+        canMerge.mockReturnValue(true)
+        const whitelist = []
+        const blacklist = []
+        const passing_status_checks = []
+        const config: Config = {
+            dry_run: true,
+            whitelist,
+            blacklist,
+            method,
+            passing_status_checks
+        }
+        await mergeIfReady(
+            (client as unknown) as Client,
+            owner,
+            repo,
+            mockPR.data,
+            config,
+        )
+        expect(isEnabledForPR).toHaveBeenCalledWith(
+            [],
+            config.whitelist,
+            config.blacklist,
+        )
+        expect(client.pulls.get).toHaveBeenCalledTimes(1)
+        expect(client.pulls.get).toHaveBeenCalledWith({
+            owner,
+            repo,
+            pull_number: prNumber,
+        })
+        expect(canMerge).toHaveBeenCalledTimes(1)
+        expect(canMerge).toHaveBeenCalledWith(mockPR.data)
+
+        // Key check: Everything else should work as expected, except for
+        // merging, because dry_run: true.
         expect(client.pulls.merge).toHaveBeenCalledTimes(0)
     })
 })

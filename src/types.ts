@@ -7,6 +7,7 @@ export type Context = typeof github.context
 export type Client = github.GitHub
 
 export interface Config {
+    dry_run?: boolean
     whitelist: string[]
     blacklist: string[]
     method?: 'merge' | 'squash' | 'rebase'

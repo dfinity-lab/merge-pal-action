@@ -20,12 +20,20 @@ export class MissingConfigurationError extends Error {
 
 export function parseConfig(rawConfig: any): Config {
     const result: Config = {
+        dry_run: false,
         whitelist: [],
         blacklist: [],
         method: undefined,
         passing_status_checks: [],
     }
 
+    if (rawConfig && rawConfig.hasOwnProperty('dry_run')) {
+        if (typeof rawConfig.dry_run === 'boolean') {
+            result.dry_run = rawConfig.dry_run
+        } else {
+            throw new InvalidConfigurationError('`dry_run` should be a boolean')
+        }
+    }
     if (rawConfig && rawConfig.whitelist) {
         if (Array.isArray(rawConfig.whitelist)) {
             result.whitelist = rawConfig.whitelist

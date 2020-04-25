@@ -4517,6 +4517,10 @@ function pushHandler(client, context, config) {
                 return;
             }
             console.log('pushHandler: enabled for this PR, starting updateBranch');
+            if (config.dry_run) {
+                console.log('pushHandler: ... but dry_run is enabled, so skipping');
+                return;
+            }
             let ret = client.pulls.updateBranch(Object.assign(Object.assign({}, context.repo), { pull_number: pr.number, expected_head_sha: pr.head.sha }));
             console.log('pushHandler: updateBranch completed');
             return ret;
@@ -11948,6 +11952,10 @@ function mergeIfReady(client, owner, repo, pr, config) {
         //     return;
         // }
         if (canMerge_1.default(pr_data)) {
+            if (config.dry_run) {
+                console.log('mergeIfReady: dry_run enabled, skipping merge');
+                return;
+            }
             console.log('mergeIfReady: PR can be merged, starting merge');
             yield client.pulls.merge({
                 owner,
@@ -13631,11 +13639,20 @@ class MissingConfigurationError extends Error {
 exports.MissingConfigurationError = MissingConfigurationError;
 function parseConfig(rawConfig) {
     const result = {
+        dry_run: false,
         whitelist: [],
         blacklist: [],
         method: undefined,
         passing_status_checks: [],
     };
+    if (rawConfig && rawConfig.hasOwnProperty('dry_run')) {
+        if (typeof rawConfig.dry_run === 'boolean') {
+            result.dry_run = rawConfig.dry_run;
+        }
+        else {
+            throw new InvalidConfigurationError('`dry_run` should be a boolean');
+        }
+    }
     if (rawConfig && rawConfig.whitelist) {
         if (Array.isArray(rawConfig.whitelist)) {
             result.whitelist = rawConfig.whitelist;

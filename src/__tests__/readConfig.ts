@@ -10,6 +10,7 @@ describe('config', () => {
             ${{}}
         `('returns default values when input is $value', ({ value }) => {
             expect(parseConfig(value)).toEqual({
+                dry_run: false,
                 whitelist: [],
                 blacklist: [],
                 method: undefined,
@@ -17,6 +18,11 @@ describe('config', () => {
             })
         })
         it('throws when types mismatch', () => {
+            expect(() => {
+                parseConfig({
+                    dry_run: 'false'
+                })
+            }).toThrowError()
             expect(() => {
                 parseConfig({
                     whitelist: {},
@@ -43,8 +49,18 @@ describe('config', () => {
                 })
             }).toThrowError()
         })
+        it('assigns dry_run', () => {
+            expect(parseConfig({dry_run: true})).toEqual({
+                dry_run: true,
+                whitelist: [],
+                blacklist: [],
+                method: undefined,
+                passing_status_checks: []
+            })
+        })
         it('assigns method', () => {
             expect(parseConfig({ method: 'merge' })).toEqual({
+                dry_run: false,
                 whitelist: [],
                 blacklist: [],
                 method: 'merge',
@@ -53,6 +69,7 @@ describe('config', () => {
         })
         it('assigns passing_status_checks', () => {
             expect(parseConfig({ passing_status_checks: ['foo']})).toEqual({
+                dry_run: false,
                 whitelist: [],
                 blacklist: [],
                 method: undefined,
@@ -65,10 +82,21 @@ describe('config', () => {
             readConfig(path.join(__dirname, '.mergepal.yml'))
         }).toThrowError()
     })    
+    it('it parses dry_run', () => {
+        expect(
+            readConfig(path.join(__dirname, './configs/dry_run.yml')),
+        ).toEqual({
+            dry_run: true,
+            whitelist: [],
+            blacklist: [],
+            passing_status_checks: [],
+        })
+    })
     it('it parses whitelist and blacklist', () => {
         expect(
             readConfig(path.join(__dirname, './configs/whiteandblack.yml')),
         ).toEqual({
+            dry_run: false,
             whitelist: ['white'],
             blacklist: ['black'],
             passing_status_checks: [],
@@ -78,6 +106,7 @@ describe('config', () => {
         expect(
             readConfig(path.join(__dirname, './configs/whiteonly.yml')),
         ).toEqual({
+            dry_run: false,
             whitelist: ['white'],
             blacklist: [],
             passing_status_checks: [],
@@ -87,6 +116,7 @@ describe('config', () => {
         expect(
             readConfig(path.join(__dirname, './configs/blackonly.yml')),
         ).toEqual({
+            dry_run: false,
             whitelist: [],
             blacklist: ['black'],
             passing_status_checks: [],
@@ -96,6 +126,7 @@ describe('config', () => {
         expect(
             readConfig(path.join(__dirname, './configs/passing_status_checks.yml')),
         ).toEqual({
+            dry_run: false,
             whitelist: [],
             blacklist: [],
             passing_status_checks: ['mandatory-check'],

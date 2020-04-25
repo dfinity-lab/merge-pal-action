@@ -35,6 +35,12 @@ export default async function pushHandler(
             console.log(
                 'pushHandler: enabled for this PR, starting updateBranch',
             )
+            if (config.dry_run) {
+                console.log(
+                    'pushHandler: ... but dry_run is enabled, so skipping',
+                )
+                return
+            }
             let ret = client.pulls.updateBranch({
                 ...context.repo,
                 pull_number: pr.number,

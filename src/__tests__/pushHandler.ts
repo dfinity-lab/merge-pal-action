@@ -128,4 +128,44 @@ describe('pushHandler', () => {
             expected_head_sha: 'xyz',
         })
     })
+    it('does not update if dry_run is enabled', async () => {
+        const repo = 'repo'
+        const owner = 'johndoe'
+        const context = {
+            repo: { repo, owner },
+            eventName: 'pull_request_review',
+            payload: {
+                ref: 'refs/heads/master',
+                after: 'abcdef',
+            },
+        }
+        const config = {
+            dry_run: true,
+        }
+        isEnabledForPR.mockReturnValueOnce(true)
+        const mockPR = {
+            number: 10,
+            head: { sha: 'def' },
+            labels: [{
+                name: 'foo'
+            }] as Array<Octokit.PullsGetResponseLabelsItem>,
+        }
+        mockList.mockResolvedValueOnce({
+            data: [mockPR],
+        })
+        await pushHandler(
+            (client as unknown) as Client,
+            (context as unknown) as Context,
+            (config as unknown) as Config,
+        )
+        expect(mockList).toHaveBeenCalledWith({
+            owner,
+            repo,
+            state: 'open',
+            base: 'master',
+        })
+        expect(isEnabledForPR).toBeCalledTimes(1)
+        expect(isEnabledForPR).lastCalledWith(['foo'], undefined, undefined)
+        expect(mockUpdateBranch).toHaveBeenCalledTimes(0)
+    })
 })

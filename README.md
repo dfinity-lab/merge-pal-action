@@ -111,10 +111,15 @@ It can hold the following fields:
 
 | field | type | description |
 | --- | --- | --- |
+| dry_run | boolean | If `true` (default is `false`) PRs will not be updated or merged |
 | whitelist | string[] | whitelisted labels to perform automerge |
 | blacklist | string[] | blacklisted labels to forbid automerge |
 | method | "merge" \| "squash" \| "rebase" | method to use when merging |
 | passing_status_checks | string[] | context names of status checks that must pass |
+
+Note that enabling `dry_run` will not prevent Merge Pal from perfoming
+actions that make API calls (e.g., listing PRs, or fetching individual
+PRs), it only prevents the update or merge of a PR.
 
 Merge Pal is normally run for every change to a status check. This can be a problem
 if you have multiple status checks but only some of them need to pass for the PR to

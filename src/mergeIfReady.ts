@@ -66,6 +66,10 @@ export default async function mergeIfReady(
     // }
 
     if (canMerge(pr_data)) {
+        if (config.dry_run) {
+            console.log('mergeIfReady: dry_run enabled, skipping merge')
+            return
+        }
         console.log('mergeIfReady: PR can be merged, starting merge')
         await client.pulls.merge({
             owner,
