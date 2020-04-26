@@ -2021,25 +2021,24 @@ function main(core, github) {
             core.setFailed(e.message);
             return;
         }
-        console.log('config', JSON.stringify(config));
-        console.log('context', JSON.stringify(github.context));
+        core.group('config:', () => __awaiter(this, void 0, void 0, function* () { return core.info(JSON.stringify(config, undefined, 2)); }));
+        core.group('context:', () => __awaiter(this, void 0, void 0, function* () { return core.info(JSON.stringify(github.context, undefined, 2)); }));
         const event = github.context.eventName;
-        console.log('eventName', event);
-        console.log('rate limit info');
+        core.info(`eventName: ${event}`);
         let rateLimit = yield client.rateLimit.get();
-        console.log(rateLimit.data.resources.core);
+        core.info(`Rate limit: ${JSON.stringify(rateLimit.data.resources.core, undefined, 2)}`);
         switch (event) {
             case 'pull_request':
-                yield prHandler_1.default(client, github.context, config);
+                yield core.group('prHandler()', () => prHandler_1.default(client, github.context, config));
                 break;
             case 'status':
-                yield statusHandler_1.default(client, github.context, config);
+                yield core.group('statusHandler()', () => statusHandler_1.default(client, github.context, config));
                 break;
             case 'pull_request_review':
-                yield reviewHandler_1.default(client, github.context, config);
+                yield core.group('reviewHandler()', () => reviewHandler_1.default(client, github.context, config));
                 break;
             case 'push':
-                yield pushHandler_1.default(client, github.context, config);
+                yield core.group('pushHandler()', () => pushHandler_1.default(client, github.context, config));
                 break;
         }
     });

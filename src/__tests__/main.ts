@@ -45,7 +45,10 @@ describe('main behavior', () => {
         it('should read inputs and initialize client', async () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
+                debug: jest.fn(),
                 getInput: mockInput,
+                group: jest.fn(),
+                info: jest.fn(),
                 setFailed: jest.fn(),
             }
             const github = {
@@ -64,7 +67,10 @@ describe('main behavior', () => {
         it('should call merge processor', async () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
+                debug: jest.fn(),
                 getInput: mockInput,
+                group: (_, fn) => fn(),
+                info: jest.fn(),
                 setFailed: jest.fn(),
             }
             const github = {
@@ -93,7 +99,10 @@ describe('main behavior', () => {
         it('should call status handler on status event', async () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
+                debug: jest.fn(),
                 getInput: mockInput,
+                group: (_, fn) => fn(),
+                info: jest.fn(),
                 setFailed: jest.fn(),
             }
             const github = {
@@ -122,7 +131,10 @@ describe('main behavior', () => {
         it('should call review handler on review event', async () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
+                debug: jest.fn(),
                 getInput: mockInput,
+                group: (_, fn) => fn(),
+                info: jest.fn(),
                 setFailed: jest.fn(),
             }
 
@@ -152,7 +164,10 @@ describe('main behavior', () => {
         it('should call push handler on push event', async () => {
             const mockInput = jest.fn().mockReturnValueOnce('token-123')
             const core = {
+                debug: jest.fn(),
                 getInput: mockInput,
+                group: (_, fn) => fn(),
+                info: jest.fn(),
                 setFailed: jest.fn(),
             }
             const github = {

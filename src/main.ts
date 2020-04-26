@@ -16,26 +16,47 @@ export default async function main(core: CoreModule, github: GitHubModule) {
         return
     }
 
-    console.log('config', JSON.stringify(config))
-    console.log('context', JSON.stringify(github.context))
+    core.group('config:', async () =>
+        core.info(JSON.stringify(config, undefined, 2)),
+    )
+
+    core.group('context:', async () =>
+        core.info(JSON.stringify(github.context, undefined, 2)),
+    )
+
     const event = github.context.eventName
-    console.log('eventName', event)
-    console.log('rate limit info')
+
+    core.info(`eventName: ${event}`)
+
     let rateLimit = await client.rateLimit.get()
-    console.log(rateLimit.data.resources.core)
+    core.info(
+        `Rate limit: ${JSON.stringify(
+            rateLimit.data.resources.core,
+            undefined,
+            2,
+        )}`,
+    )
 
     switch (event) {
         case 'pull_request':
-            await prHandler(client, github.context, config)
+            await core.group('prHandler()', () =>
+                prHandler(client, github.context, config),
+            )
             break
         case 'status':
-            await statusHandler(client, github.context, config)
+            await core.group('statusHandler()', () =>
+                statusHandler(client, github.context, config),
+            )
             break
         case 'pull_request_review':
-            await reviewHandler(client, github.context, config)
+            await core.group('reviewHandler()', () =>
+                reviewHandler(client, github.context, config),
+            )
             break
         case 'push':
-            await pushHandler(client, github.context, config)
+            await core.group('pushHandler()', () =>
+                pushHandler(client, github.context, config),
+            )
             break
     }
 }
