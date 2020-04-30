@@ -4,6 +4,7 @@ import statusHandler from './statusHandler'
 import reviewHandler from './reviewHandler'
 import pushHandler from './pushHandler'
 import readConfig from './readConfig'
+import repositoryDispatchHandler from './repositoryDispatchHandler'
 
 export default async function main(core: CoreModule, github: GitHubModule) {
     const token = core.getInput('token')
@@ -57,6 +58,14 @@ export default async function main(core: CoreModule, github: GitHubModule) {
             await core.group('pushHandler()', () =>
                 pushHandler(client, github.context, config),
             )
+            break
+        case 'repository_dispatch':
+            await core.group('repositoryDispatchHandler()', () =>
+                repositoryDispatchHandler(client, github.context, config),
+            )
+            break
+        default:
+            core.info(`Event ${event} is not handled, exiting`)
             break
     }
 }

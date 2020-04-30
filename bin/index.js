@@ -2009,6 +2009,7 @@ const statusHandler_1 = __importDefault(__webpack_require__(638));
 const reviewHandler_1 = __importDefault(__webpack_require__(657));
 const pushHandler_1 = __importDefault(__webpack_require__(320));
 const readConfig_1 = __importDefault(__webpack_require__(857));
+const repositoryDispatchHandler_1 = __importDefault(__webpack_require__(151));
 function main(core, github) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput('token');
@@ -2039,6 +2040,12 @@ function main(core, github) {
                 break;
             case 'push':
                 yield core.group('pushHandler()', () => pushHandler_1.default(client, github.context, config));
+                break;
+            case 'repository_dispatch':
+                yield core.group('repositoryDispatchHandler()', () => repositoryDispatchHandler_1.default(client, github.context, config));
+                break;
+            default:
+                core.info(`Event ${event} is not handled, exiting`);
                 break;
         }
     });
@@ -2148,6 +2155,99 @@ function paginatePlugin(octokit) {
   octokit.paginate = paginate.bind(null, octokit);
   octokit.paginate.iterator = iterator.bind(null, octokit);
 }
+
+
+/***/ }),
+
+/***/ 151:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const isEnabledForPR_1 = __importDefault(__webpack_require__(520));
+const canMerge_1 = __importDefault(__webpack_require__(592));
+function repositoryDispatchHandler(client, context, config) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const event = context.payload;
+        console.log('Action: ', event.action);
+        console.log('Client Payload ', event.client_payload);
+        // TODO: Make config parameter
+        if (event.action !== 'hydra-finished-all-jobs') {
+            console.log('Not a hydra-finished-all-jobs event, skipping');
+            return;
+        }
+        // TODO: The type in the Webhooks index.d.ts file is
+        // type WebhookPayloadRepositoryDispatchClientPayload = {
+        //    unit: boolean;
+        //    integration: boolean;
+        // };
+        // Think this is just an example rather than mandated by GitHub, but it's
+        // why we have to treat this `as unknown` first.
+        const payload = event.client_payload;
+        // TODO: Sanity check this in case it can fail
+        let pr_number = Number(payload.pr);
+        // TODO: This duplicates code in mergeIfReady. mergeIfReady wants the full
+        // pr, not just the number.
+        // Should look at what other info can be returned from Hydra, in particular,
+        // if we can get the label names from the PR.
+        const owner = context.repo.owner;
+        const repo = context.repo.repo;
+        const pr = yield client.pulls.get({
+            owner,
+            repo,
+            pull_number: pr_number,
+        });
+        const label_names = pr.data.labels.map((label) => label.name);
+        if (!isEnabledForPR_1.default(label_names, config.whitelist, config.blacklist)) {
+            console.log('repositoryDispatchHandler: Not enabled for this PR, skipping');
+            return;
+        }
+        if (pr.data.mergeable_state === 'behind') {
+            console.log('repositoryDispatchHandler: PR is behind base: {}', pr.data.base.ref);
+            if (config.dry_run) {
+                console.log('repositoryDispatchHandler: dry_run enabled, skipping update');
+                return;
+            }
+            console.log('repositoryDispatchHandler: Updating branch, {}, {}, {}, {}', pr.data.head.sha, pr.data.number, pr.data.head.repo.name, pr.data.head.user.login);
+            yield client.pulls.updateBranch({
+                expected_head_sha: pr.data.head.sha,
+                pull_number: pr.data.number,
+                repo: pr.data.head.repo.name,
+                owner: pr.data.head.user.login,
+            });
+            return;
+        }
+        if (canMerge_1.default(pr.data)) {
+            if (config.dry_run) {
+                console.log('repositoryDispatchHandler: dry_run enabled, skipping merge');
+                return;
+            }
+            console.log('repositoryDispatchHandler: PR can be merged, starting merge');
+            yield client.pulls.merge({
+                owner,
+                repo,
+                pull_number: pr_number,
+                sha: pr.data.head.sha,
+                merge_method: config.method,
+            });
+            console.log('repositoryDispatchHandler: merge completed');
+        }
+    });
+}
+exports.default = repositoryDispatchHandler;
 
 
 /***/ }),
